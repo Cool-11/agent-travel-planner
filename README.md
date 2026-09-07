@@ -1,212 +1,107 @@
-# HelloAgents智能旅行助手 🌍✈️
+# Agent Travel Planner · 多 Agent 旅行规划助手
 
-基于HelloAgents框架构建的智能旅行规划助手,集成高德地图MCP服务,提供个性化的旅行计划生成。
+> 基于多 Agent + MCP 协议的端到端旅行规划应用，配套可靠性改进与自动化评测体系。
+> 本仓库基于 [Datawhale hello-agents](https://github.com/datawhalechina/hello-agents) 第十三章教程扩展，新增工具降级、幻觉校验、自动化评测等工程化能力。
 
-## ✨ 功能特点
+## 这是什么
 
-- 🤖 **AI驱动的旅行规划**: 基于HelloAgents框架的SimpleAgent,智能生成详细的多日旅程
-- 🗺️ **高德地图集成**: 通过MCP协议接入高德地图服务,支持景点搜索、路线规划、天气查询
-- 🧠 **智能工具调用**: Agent自动调用高德地图MCP工具,获取实时POI、路线和天气信息
-- 🎨 **现代化前端**: Vue3 + TypeScript + Vite,响应式设计,流畅的用户体验
-- 📱 **完整功能**: 包含住宿、交通、餐饮和景点游览时间推荐
+一个面向"出行规划"场景的多 Agent Web 应用：用户填目的地 / 日期 / 偏好，系统自动生成带预算、地图、每日安排的可编辑行程。
 
-## 🏗️ 技术栈
+和原教程相比，本仓库的**差异化**：
 
-### 后端
-- **框架**: HelloAgents (基于SimpleAgent)
-- **API**: FastAPI
-- **MCP工具**: amap-mcp-server (高德地图)
-- **LLM**: 支持多种LLM提供商(OpenAI, DeepSeek等)
+- **可靠性改进**：在 4 个专门 Agent 上落地工具调用降级与搜索结果幻觉校验策略
+- **自动化评测**：搭建 30+ 条测试用例 + 成功率 / 完成率 / 幻觉率评分脚本
+- **前后对比**：跑出"改造前 / 改造后"的硬数字，作为简历可引用证据
 
-### 前端
-- **框架**: Vue 3 + TypeScript
-- **构建工具**: Vite
-- **UI组件库**: Ant Design Vue
-- **地图服务**: 高德地图 JavaScript API
-- **HTTP客户端**: Axios
-
-## 📁 项目结构
+## 架构
 
 ```
-helloagents-trip-planner/
-├── backend/                    # 后端服务
-│   ├── app/
-│   │   ├── agents/            # Agent实现
-│   │   │   └── trip_planner_agent.py
-│   │   ├── api/               # FastAPI路由
-│   │   │   ├── main.py
-│   │   │   └── routes/
-│   │   │       ├── trip.py
-│   │   │       └── map.py
-│   │   ├── services/          # 服务层
-│   │   │   ├── amap_service.py
-│   │   │   └── llm_service.py
-│   │   ├── models/            # 数据模型
-│   │   │   └── schemas.py
-│   │   └── config.py          # 配置管理
-│   ├── requirements.txt
-│   ├── .env.example
-│   └── .gitignore
-├── frontend/                   # 前端应用
-│   ├── src/
-│   │   ├── components/        # Vue组件
-│   │   ├── services/          # API服务
-│   │   ├── types/             # TypeScript类型
-│   │   └── views/             # 页面视图
-│   ├── package.json
-│   └── vite.config.ts
-└── README.md
+┌─────────────┐   HTTP    ┌──────────────┐   MCP   ┌────────────┐
+│  Vue3 + TS  │ ────────► │   FastAPI    │ ──────► │ amap MCP   │
+│  Frontend   │           │   Backend    │         │  Server    │
+└─────────────┘           └──────┬───────┘         └────────────┘
+                                 │
+                          ┌──────▼───────┐
+                          │  4 个 Agent  │
+                          │  - 景点搜索  │
+                          │  - 天气查询  │
+                          │  - 酒店推荐  │
+                          │  - 行程规划  │
+                          └──────────────┘
 ```
 
-## 🚀 快速开始
+## 技术栈
 
-### 前提条件
+| 层 | 选型 |
+| --- | --- |
+| 前端 | Vue3 + TypeScript + Axios |
+| 后端 | Python 3.10+ / FastAPI / Pydantic |
+| Agent | HelloAgents 框架（Datawhale 开源）+ 自定义 ToolDispatcher |
+| 协议 | MCP（Model Context Protocol）/ amap-mcp-server |
+| LLM | OpenAI 兼容 API（DeepSeek / 智谱 / OpenAI） |
+| 评测 | 自研 Python 脚本 + 30 条测试集 |
 
-- Python 3.10+
-- Node.js 16+
-- 高德地图API密钥 (Web服务API和Web端(JS API))
-- LLM API密钥 (OpenAI/DeepSeek等)
+## 快速开始
 
-### 后端安装
-
-1. 进入后端目录
 ```bash
 cd backend
-```
-
-2. 创建虚拟环境
-```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-```
-
-3. 安装依赖
-```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-4. 配置环境变量
-```bash
 cp .env.example .env
-# 编辑.env文件,填入你的API密钥
-```
+uvicorn app.api.main:app --reload
 
-5. 启动后端服务
-```bash
-uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 前端安装
-
-1. 进入前端目录
-```bash
+# 另一个终端
 cd frontend
-```
-
-2. 安装依赖
-```bash
 npm install
-```
-
-3. 配置环境变量
-```bash
-# 创建.env文件, 填入高德地图Web API Key 和 Web端JS API Key
-cp .env.example .env
-```
-
-4. 启动开发服务器
-```bash
 npm run dev
 ```
 
-5. 打开浏览器访问 `http://localhost:5173`
+打开 http://localhost:5173 即可使用。
 
-## 📝 使用指南
+## 评测（与教程最大差异）
 
-1. 在首页填写旅行信息:
-   - 目的地城市
-   - 旅行日期和天数
-   - 交通方式偏好
-   - 住宿偏好
-   - 旅行风格标签
-
-2. 点击"生成旅行计划"按钮
-
-3. 系统将:
-   - 调用HelloAgents Agent生成初步计划
-   - Agent自动调用高德地图MCP工具搜索景点
-   - Agent获取天气信息和路线规划
-   - 整合所有信息生成完整行程
-
-4. 查看结果:
-   - 每日详细行程
-   - 景点信息与地图标记
-   - 交通路线规划
-   - 天气预报
-   - 餐饮推荐
-
-## 🔧 核心实现
-
-### HelloAgents Agent集成
-
-```python
-from hello_agents import SimpleAgent, HelloAgentsLLM
-from hello_agents.tools import MCPTool
-
-# 创建高德地图MCP工具
-amap_tool = MCPTool(
-    name="amap",
-    server_command=["uvx", "amap-mcp-server"],
-    env={"AMAP_MAPS_API_KEY": "your_api_key"},
-    auto_expand=True
-)
-
-# 创建旅行规划Agent
-agent = SimpleAgent(
-    name="旅行规划助手",
-    llm=HelloAgentsLLM(),
-    system_prompt="你是一个专业的旅行规划助手..."
-)
-
-# 添加工具
-agent.add_tool(amap_tool)
+```bash
+python scripts/run_eval.py --baseline
+python scripts/run_eval.py
+python scripts/score_eval.py
 ```
 
-### MCP工具调用
+输出示例（待跑出真实数据后填）：
 
-Agent可以自动调用以下高德地图MCP工具:
-- `maps_text_search`: 搜索景点POI
-- `maps_weather`: 查询天气
-- `maps_direction_walking_by_address`: 步行路线规划
-- `maps_direction_driving_by_address`: 驾车路线规划
-- `maps_direction_transit_integrated_by_address`: 公共交通路线规划
+| 指标 | 改造前 | 改造后 | 样本量 |
+| --- | --- | --- | --- |
+| 成功率 | TBD | TBD | 30 |
+| 完成率 | TBD | TBD | 30 |
+| 幻觉率 | TBD | TBD | 30 |
+| 平均时延 | TBD | TBD | 30 |
 
-## 📄 API文档
+## 项目结构
 
-启动后端服务后,访问 `http://localhost:8000/docs` 查看完整的API文档。
+```
+agent-travel-planner/
+├── backend/            # FastAPI + Agents
+├── frontend/           # Vue3 + TypeScript
+├── docs/
+│   ├── eval-methodology.md
+│   └── reliability-notes.md
+└── README.md
+```
 
-主要端点:
-- `POST /api/trip/plan` - 生成旅行计划
-- `GET /api/map/poi` - 搜索POI
-- `GET /api/map/weather` - 查询天气
-- `POST /api/map/route` - 规划路线
+## 进展
 
-## 🤝 贡献指南
+- [x] 完成 Datawhale hello-agents Ch13 全流程跟随实践
+- [x] 搭建 FastAPI 后端 + Vue3 前端 + 4 个 Agent + MCP 集成
+- [ ] 实现 ToolDispatcher（重试 + 降级 + 优雅失败）
+- [ ] 实现 Pydantic 强约束 + 强制引用 prompt
+- [ ] 跑 30 条样本 baseline
+- [ ] 跑改造后数字
+- [ ] 写对比报告
 
-欢迎提交Pull Request或Issue!
+## 致谢
 
-## 📜 开源协议
+本仓库基于 [Datawhale hello-agents](https://github.com/datawhalechina/hello-agents) 第十三章教程扩展。
+感谢 [Datawhale](https://github.com/datawhalechina) 社区的 HelloAgents 框架与高德 MCP 服务器。
 
-CC BY-NC-SA 4.0
+## License
 
-## 🙏 致谢
-
-- [HelloAgents](https://github.com/datawhalechina/Hello-Agents) - 智能体教程
-- [HelloAgents框架](https://github.com/jjyaoao/HelloAgents) - 智能体框架
-- [高德地图开放平台](https://lbs.amap.com/) - 地图服务
-- [amap-mcp-server](https://github.com/sugarforever/amap-mcp-server) - 高德地图MCP服务器
-
----
-
-**HelloAgents智能旅行助手** - 让旅行计划变得简单而智能 🌈
-
+MIT
